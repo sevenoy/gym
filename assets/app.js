@@ -2,6 +2,7 @@ const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
 
 createApp({
   setup() {
+    // 本地存储 Key
     const K = {
       prefs: 'gym_prefs',
       videos: 'gym_videos',
@@ -10,6 +11,7 @@ createApp({
       logs: 'gym_logs',
     };
 
+    // 核心数据
     const prefs = reactive({ interval: 60, part: 'legs', customParts: [] });
     const videos = reactive({
       legs: [],
@@ -23,22 +25,32 @@ createApp({
     const trainText = reactive({});
     const logs = ref([]);
 
+    // UI 状态
     const currentTab = ref('home');
     const workoutSubTab = ref('记录');
     const showLogModal = ref(false);
     const showCustomPartModal = ref(false);
     const expandedLogId = ref(null);
 
+    // 隐藏文件输入，用来读取 JSON 备份
+    const fileInput = ref(null);
+
+    // 修正老日志里的时间戳
     const fixLogs = (loadedLogs) => {
       if (!Array.isArray(loadedLogs)) return [];
       return loadedLogs.map((log) => {
         if (!log.ts || isNaN(new Date(log.ts).getTime())) {
           log.ts = Date.now();
         }
+        // 兼容：没有 id 的旧日志补一个
+        if (!log.id) {
+          log.id = String(log.ts) + '_' + Math.random().toString(16).slice(2);
+        }
         return log;
       });
     };
 
+    // 读取本地存储
     const load = () => {
       try {
         const p = JSON.parse(localStorage.getItem(K.prefs));
@@ -70,10 +82,11 @@ createApp({
 
     onMounted(load);
     watch([prefs, videos, notes, trainText, logs], () => {
+      // 简单防抖
       setTimeout(saveAll, 500);
     }, { deep: true });
 
-    // 1. 基础部位
+    // 基础部位
     const baseParts = [
       { id: 'legs', name: '腿部' },
       { id: 'chest', name: '胸部' },
@@ -83,7 +96,7 @@ createApp({
       { id: 'core', name: '核心' },
     ];
 
-    // 2. 全部部位（包含自定义）
+    // 全部部位（含自定义）
     const allParts = computed(() => [
       ...baseParts,
       ...prefs.customParts.map((p) => ({ id: 'c_' + p, name: p })),
@@ -102,17 +115,17 @@ createApp({
       if (!name) return 'ri-question-line';
       const n = name.toLowerCase();
 
-      if (n.includes('腿部')) return 'ri-walk-fill';
-      if (n.includes('胸部')) return 'ri-t-shirt-air-fill';
-      if (n.includes('背部')) return 'ri-align-vertically';
-      if (n.includes('肩部')) return 'ri-medal-fill';
-      if (n.includes('手臂')) return 'ri-boxing-fill';
-      if (n.includes('核心')) return 'ri-shape-2-fill';
+      if (n.includes('腿')) return 'ri-walk-fill';
+      if (n.includes('胸')) return 'ri-t-shirt-air-fill';
+      if (n.includes('背')) return 'ri-align-vertically';
+      if (n.includes('肩')) return 'ri-medal-fill';
+      if (n.includes('臂')) return 'ri-boxing-fill';
+      if (n.includes('核')) return 'ri-shape-2-fill';
 
       if (n.includes('小腿')) return 'ri-footprint-fill';
       if (n.includes('大腿')) return 'ri-run-fill';
       if (n.includes('二头')) return 'ri-flashlight-fill';
-      if (n.includes('屁股') || n.includes('臀')) return 'ri-moon-fill';
+      if (n.includes('臀') || n.includes('屁股')) return 'ri-moon-fill';
 
       return 'ri-star-smile-fill';
     };
@@ -120,11 +133,12 @@ createApp({
     // 自定义部位
     const newCustomPartName = ref('');
     const addCustomPart = () => {
-      if (!newCustomPartName.value) return;
       const name = newCustomPartName.value.trim();
       if (!name) return;
-      prefs.customParts.push(name);
-      videos['c_' + name] = [];
+      if (!prefs.customParts.includes(name)) {
+        prefs.customParts.push(name);
+        if (!videos['c_' + name]) videos['c_' + name] = [];
+      }
       newCustomPartName.value = '';
     };
     const removeCustomPart = (i) => {
@@ -132,7 +146,7 @@ createApp({
     };
 
     // 计时器
-    const timer = ref(60);
+    const timer = ref(prefs.interval);
     const isRunning = ref(false);
     let intervalId = null;
 
@@ -144,10 +158,16 @@ createApp({
       return `${m}:${sec}`;
     };
 
+    const resetTimer = () => {
+      isRunning.value = false;
+      if (intervalId) clearInterval(intervalId);
+      timer.value = prefs.interval || 60;
+    };
+
     const startTimer = () => {
       if (isRunning.value) return;
       isRunning.value = true;
-      if (timer.value === 0) timer.value = prefs.interval;
+      if (timer.value === 0) timer.value = prefs.interval || 60;
       intervalId = setInterval(() => {
         if (timer.value > 0) {
           timer.value--;
@@ -162,22 +182,16 @@ createApp({
       }, 1000);
     };
 
-    const resetTimer = () => {
-      isRunning.value = false;
-      clearInterval(intervalId);
-      timer.value = prefs.interval;
-    };
-
     const toggleTimer = () => {
       if (isRunning.value) {
         isRunning.value = false;
-        clearInterval(intervalId);
+        if (intervalId) clearInterval(intervalId);
       } else {
         startTimer();
       }
     };
 
-    // 文本/训练内容
+    // 训练文本
     const currentTrainText = computed({
       get: () => (trainText[prefs.part]?.all || ''),
       set: (v) => {
@@ -188,38 +202,6 @@ createApp({
 
     const saveTrainText = () => {
       saveAll();
-    };
-
-    const currentPartVideos = computed(() => videos[prefs.part] || []);
-    const selectedVideoIndex = ref(-1);
-    const currentVideo = computed(() => {
-      if (selectedVideoIndex.value >= 0) {
-        return currentPartVideos.value[selectedVideoIndex.value];
-      }
-      return currentPartVideos.value.length
-        ? currentPartVideos.value[0]
-        : null;
-    });
-
-    const isLink = (url) => url && url.startsWith('http');
-
-    const openVideoLink = (url) => {
-      if (!url) return;
-      window.open(url, '_blank');
-    };
-
-    const getEmbedUrl = (url) => {
-      if (!url) return '';
-      if (url.includes('youtube.com') || url.includes('youtu.be')) {
-        const regExp =
-          /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
-        const match = url.match(regExp);
-        const id = match && match[2].length === 11 ? match[2] : null;
-        if (id) {
-          return `https://www.youtube.com/embed/${id}?rel=0&playsinline=1`;
-        }
-      }
-      return url;
     };
 
     const cleanText = (text) => {
@@ -243,9 +225,40 @@ createApp({
       saveAll();
     };
 
+    // 视频相关
+    const currentPartVideos = computed(() => videos[prefs.part] || []);
+    const selectedVideoIndex = ref(-1);
+    const currentVideo = computed(() => {
+      if (selectedVideoIndex.value >= 0) {
+        return currentPartVideos.value[selectedVideoIndex.value];
+      }
+      return currentPartVideos.value.length ? currentPartVideos.value[0] : null;
+    });
+
+    const isLink = (url) => url && url.startsWith('http');
+
+    const openVideoLink = (url) => {
+      if (!url) return;
+      window.open(url, '_blank');
+    };
+
+    const getEmbedUrl = (url) => {
+      if (!url) return '';
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        const regExp =
+          /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
+        const match = url.match(regExp);
+        const id = match && match[2].length === 11 ? match[2] : null;
+        if (id) {
+          return `https://www.youtube.com/embed/${id}?rel=0&playsinline=1`;
+        }
+      }
+      return url;
+    };
+
     // 日志
     const sortedLogs = computed(() =>
-      [...logs.value].sort((a, b) => b.ts - a.ts),
+      [...logs.value].sort((a, b) => Number(b.ts) - Number(a.ts)),
     );
 
     const getDateParts = (ts) => {
@@ -254,16 +267,13 @@ createApp({
         return { month: '--', day: '--' };
       }
       return {
-        month: date
-          .toLocaleDateString('en-US', { month: 'short' })
-          .toUpperCase(),
+        month: date.toLocaleDateString('en-US', { month: 'short' }).toUpperCase(),
         day: date.getDate(),
       };
     };
 
     const toggleLogExpand = (id) => {
-      expandedLogId.value =
-        expandedLogId.value === id ? null : id;
+      expandedLogId.value = expandedLogId.value === id ? null : id;
     };
 
     const logForm = reactive({
@@ -275,7 +285,10 @@ createApp({
 
     const openLogModal = (log) => {
       if (log) {
-        Object.assign(logForm, log);
+        logForm.id = log.id;
+        logForm.part = log.part;
+        logForm.title = log.title;
+        logForm.content = log.content;
       } else {
         logForm.id = null;
         logForm.part = prefs.part;
@@ -293,9 +306,7 @@ createApp({
         ts: Date.now(),
       };
       if (logForm.id) {
-        const idx = logs.value.findIndex(
-          (l) => l.id === logForm.id,
-        );
+        const idx = logs.value.findIndex((l) => l.id === logForm.id);
         if (idx !== -1) {
           Object.assign(logs.value[idx], payload);
         }
@@ -310,12 +321,12 @@ createApp({
     };
 
     const deleteLog = (id) => {
-      if (!confirm('删除?')) return;
+      if (!confirm('确定删除这条日志？')) return;
       logs.value = logs.value.filter((l) => l.id !== id);
       saveAll();
     };
 
-    // 视频设置
+    // 设置页：视频管理
     const settingsPart = ref('legs');
     const videoForm = reactive({
       name: '',
@@ -358,7 +369,7 @@ createApp({
     };
 
     const deleteVideo = (i) => {
-      if (!confirm('删除?')) return;
+      if (!confirm('确定删除这个视频？')) return;
       videos[settingsPart.value].splice(i, 1);
       saveAll();
     };
@@ -378,9 +389,15 @@ createApp({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `backup_${Date.now()}.json`;
+      a.download = `jaspergym_backup_${Date.now()}.json`;
       a.click();
       URL.revokeObjectURL(url);
+    };
+
+    const openJsonPicker = () => {
+      if (!fileInput.value) return;
+      fileInput.value.value = ''; // 选同一个文件也能触发 change
+      fileInput.value.click();
     };
 
     const loadJson = (e) => {
@@ -390,26 +407,31 @@ createApp({
       reader.onload = (ev) => {
         try {
           const data = JSON.parse(ev.target.result);
+
           Object.assign(prefs, data.prefs || {});
           Object.assign(videos, data.videos || {});
           Object.assign(notes, data.notes || {});
           Object.assign(trainText, data.trainText || {});
           logs.value = fixLogs(data.logs || []);
-          alert('恢复成功');
+
+          resetTimer();
+          alert('恢复成功（已覆盖当前数据）');
+          saveAll();
         } catch (err) {
           console.error(err);
-          alert('备份文件格式错误');
+          alert('备份文件格式错误，无法读取');
         }
       };
       reader.readAsText(file);
     };
 
     const wipeAll = () => {
-      if (!confirm('清空?')) return;
+      if (!confirm('确定清空所有本地数据？')) return;
       localStorage.clear();
       location.reload();
     };
 
+    // 底部导航
     const navItems = [
       { id: 'home', name: '首页', icon: 'ri-home-5-line' },
       { id: 'workout', name: '训练', icon: 'ri-timer-flash-line' },
@@ -417,41 +439,59 @@ createApp({
       { id: 'settings', name: '设置', icon: 'ri-settings-4-line' },
     ];
 
+    // 对外暴露
     return {
+      // 数据
       prefs,
       videos,
       notes,
       trainText,
       logs,
+
+      // tab & 导航
       currentTab,
       navItems,
+
+      // 首页 / 训练
       workoutSubTab,
-      timer,
-      isRunning,
       allParts,
       selectPart,
       getPartName,
       getPartIcon,
-      startTimer,
+
+      // 计时器
+      timer,
+      isRunning,
+      formatTime,
       resetTimer,
       toggleTimer,
-      formatTime,
+
+      // 文本记录
       currentTrainText,
       saveTrainText,
+      handlePaste,
+      formatTextManual,
+
+      // 视频
       currentPartVideos,
       selectedVideoIndex,
       currentVideo,
       isLink,
       getEmbedUrl,
       openVideoLink,
+
+      // 日志
       sortedLogs,
       expandedLogId,
       toggleLogExpand,
       showLogModal,
+      logForm,
       openLogModal,
       saveLog,
       deleteLog,
-      logForm,
+      getDateParts,
+
+      // 设置：视频管理
       settingsPart,
       videoForm,
       isEditingVideo,
@@ -459,17 +499,22 @@ createApp({
       cancelEditVideo,
       saveVideo,
       deleteVideo,
+
+      // 自定义部位
       showCustomPartModal,
       newCustomPartName,
       addCustomPart,
       removeCustomPart,
+
+      // 备份 / 恢复 / 清空
       saveJson,
+      openJsonPicker,
       loadJson,
       wipeAll,
       saveAll,
-      handlePaste,
-      formatTextManual,
-      getDateParts,
+
+      // 文件输入 ref
+      fileInput,
     };
   },
 }).mount('#app');
