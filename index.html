@@ -16,10 +16,10 @@
   <link rel="icon" sizes="194x194" href="icon/icon-194.png" />
   <link rel="apple-touch-icon" sizes="512x512" href="icon/icon-512.png" />
 
-  <!-- 样式 -->
+  <!-- 自定义样式 -->
   <link rel="stylesheet" href="assets/style.css" />
 
-  <!-- Tailwind / 图标 / Vue -->
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -43,6 +43,8 @@
       },
     };
   </script>
+
+  <!-- Vue & 图标库 -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <link
     href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css"
@@ -78,6 +80,7 @@
     >
       <!-- 首页 -->
       <div v-if="currentTab === 'home'" class="space-y-6">
+        <!-- 顶部卡片 -->
         <div
           class="bg-white shadow-soft-lg rounded-card p-5 relative overflow-hidden border border-divider"
         >
@@ -105,6 +108,7 @@
           </div>
         </div>
 
+        <!-- 训练部位选择 -->
         <div>
           <div class="flex justify-between items-center mb-3 px-1">
             <h3 class="text-xs font-bold text-gray-400 uppercase">部位选择</h3>
@@ -146,8 +150,9 @@
         </div>
       </div>
 
-      <!-- 训练 -->
+      <!-- 训练页面 -->
       <div v-if="currentTab === 'workout'" class="h-full flex flex-col">
+        <!-- 标题 -->
         <div class="flex items-center justify-between mb-2 shrink-0">
           <button
             @click="currentTab = 'home'"
@@ -155,12 +160,13 @@
           >
             <i class="ri-arrow-left-line text-xl"></i>
           </button>
-          <span class="font-black text-lg text-text-main"
-            >{{ getPartName(prefs.part) }}</span
-          >
+          <span class="font-black text-lg text-text-main">
+            {{ getPartName(prefs.part) }}
+          </span>
           <div class="w-6"></div>
         </div>
 
+        <!-- 倒计时卡片 -->
         <div
           class="bg-white shadow-sm rounded-2xl flex items-center justify-between p-2 mb-3 border border-divider shrink-0 h-16"
         >
@@ -182,9 +188,7 @@
                 stroke-width="4"
                 fill="none"
                 stroke-dasharray="125"
-                :stroke-dashoffset="
-                  125 - (125 * timer / prefs.interval)
-                "
+                :stroke-dashoffset="125 - (125 * timer / prefs.interval)"
                 class="transition-all duration-1000 ease-linear"
                 stroke-linecap="round"
               />
@@ -214,6 +218,7 @@
           </div>
         </div>
 
+        <!-- 记录 / 视频 切换 -->
         <div class="flex-1 flex flex-col min-h-0">
           <div class="bg-gray-100 p-1 rounded-xl flex gap-1 mb-2 shrink-0">
             <button
@@ -231,6 +236,7 @@
             </button>
           </div>
 
+          <!-- 内容区 -->
           <div
             class="flex-1 bg-white rounded-2xl border border-divider shadow-sm overflow-hidden relative flex flex-col"
           >
@@ -260,9 +266,7 @@
 
             <!-- 视频 -->
             <div v-else class="h-full flex flex-col bg-black relative">
-              <div
-                class="absolute top-4 left-4 right-4 z-20 flex gap-2"
-              >
+              <div class="absolute top-4 left-4 right-4 z-20 flex gap-2">
                 <select
                   v-model="selectedVideoIndex"
                   class="flex-1 bg-black/60 backdrop-blur-md text-white border border-white/20 rounded-lg px-3 py-2 text-xs outline-none appearance-none"
@@ -284,9 +288,7 @@
                   外链
                 </button>
               </div>
-              <div
-                class="w-full h-full flex items-center justify-center bg-gray-900"
-              >
+              <div class="w-full h-full flex items-center justify-center bg-gray-900">
                 <div v-if="currentVideo" class="w-full h-full relative">
                   <iframe
                     v-if="isLink(currentVideo.url)"
@@ -308,14 +310,15 @@
                   v-else
                   class="text-white/30 text-sm flex flex-col items-center"
                 >
-                  <i class="ri-movie-line text-3xl mb-2"></i
-                  ><span>请选择或添加视频</span>
+                  <i class="ri-movie-line text-3xl mb-2"></i>
+                  <span>请选择或添加视频</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
+        <!-- 注意事项 -->
         <div class="mt-2 mb-1 shrink-0 min-h-[60px]">
           <div class="bg-blue-50 rounded-xl p-3 border border-blue-100">
             <div
@@ -332,7 +335,7 @@
         </div>
       </div>
 
-      <!-- 日志 -->
+      <!-- 训练日志 -->
       <div v-if="currentTab === 'logs'" class="space-y-4">
         <div class="flex justify-between items-center px-1">
           <h2 class="text-xl font-black text-text-main">训练日志</h2>
@@ -349,10 +352,8 @@
             v-if="logs.length === 0"
             class="text-center py-10 text-gray-400 text-sm"
           >
-            <i
-              class="ri-file-list-2-line text-3xl block mb-2 opacity-50"
-            ></i
-            >暂无日志
+            <i class="ri-file-list-2-line text-3xl block mb-2 opacity-50"></i>
+            暂无日志
           </div>
 
           <div
@@ -371,21 +372,15 @@
                   >
                     {{ getDateParts(log.ts).month }}
                   </div>
-                  <div
-                    class="text-lg font-black text-text-main leading-tight"
-                  >
+                  <div class="text-lg font-black text-text-main leading-tight">
                     {{ getDateParts(log.ts).day }}
                   </div>
                 </div>
                 <div class="min-w-0 border-l border-gray-200 pl-3 py-0.5">
-                  <div
-                    class="font-bold text-sm text-text-main truncate"
-                  >
+                  <div class="font-bold text-sm text-text-main truncate">
                     {{ log.title || '无标题训练' }}
                   </div>
-                  <div
-                    class="text-xs text-gray-400 flex items-center gap-1"
-                  >
+                  <div class="text-xs text-gray-400 flex items-center gap-1">
                     <i :class="getPartIcon(getPartName(log.part))"></i>
                     {{ getPartName(log.part) }}
                   </div>
@@ -401,10 +396,7 @@
             </button>
 
             <transition name="expand">
-              <div
-                v-if="expandedLogId === log.id"
-                class="px-3 pb-3 pt-0"
-              >
+              <div v-if="expandedLogId === log.id" class="px-3 pb-3 pt-0">
                 <div
                   class="pt-2 text-sm text-text-sub whitespace-pre-wrap leading-relaxed font-mono pl-14"
                 >
@@ -448,9 +440,7 @@
             </select>
           </div>
           <div class="p-4 space-y-4">
-            <div
-              class="bg-brand-50 p-3 rounded-xl border border-brand-100 space-y-2"
-            >
+            <div class="bg-brand-50 p-3 rounded-xl border border-brand-100 space-y-2">
               <input
                 v-model="videoForm.name"
                 type="text"
@@ -485,21 +475,14 @@
                 :key="i"
                 class="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-lg shadow-sm"
               >
-                <span
-                  class="text-sm font-medium truncate flex-1 mr-2"
-                  >{{ v.name }}</span
-                >
+                <span class="text-sm font-medium truncate flex-1 mr-2">
+                  {{ v.name }}
+                </span>
                 <div class="flex gap-3">
-                  <button
-                    @click="editVideo(i)"
-                    class="text-brand-500 cursor-pointer"
-                  >
+                  <button @click="editVideo(i)" class="text-brand-500 cursor-pointer">
                     <i class="ri-edit-2-line"></i>
                   </button>
-                  <button
-                    @click="deleteVideo(i)"
-                    class="text-red-400 cursor-pointer"
-                  >
+                  <button @click="deleteVideo(i)" class="text-red-400 cursor-pointer">
                     <i class="ri-delete-bin-line"></i>
                   </button>
                 </div>
@@ -518,9 +501,7 @@
         <div
           class="bg-white rounded-card border border-border shadow-sm overflow-hidden relative z-10"
         >
-          <h3
-            class="text-xs font-bold text-gray-400 uppercase px-4 pt-4 pb-2"
-          >
+          <h3 class="text-xs font-bold text-gray-400 uppercase px-4 pt-4 pb-2">
             偏好设置
           </h3>
           <div class="px-4 pb-4 space-y-4">
@@ -536,7 +517,23 @@
           </div>
         </div>
 
-        <!-- 清空数据 -->
+        <!-- 从 JSON 备份恢复 -->
+        <div
+          class="bg-white rounded-card border border-border shadow-sm overflow-hidden relative z-10"
+        >
+          <button
+            @click="openJsonPicker"
+            class="w-full p-4 text-left text-sm text-brand-600 font-medium active:bg-brand-50 cursor-pointer flex items-center justify-between"
+          >
+            <span class="flex items-center gap-2">
+              <i class="ri-upload-cloud-line text-lg"></i>
+              从 JSON 备份恢复数据
+            </span>
+            <span class="text-[10px] text-gray-400">覆盖当前数据</span>
+          </button>
+        </div>
+
+        <!-- 清空所有数据 -->
         <div
           class="bg-white rounded-card border border-border shadow-sm overflow-hidden relative z-10"
         >
@@ -573,8 +570,9 @@
               'text-[10px] font-bold',
               currentTab === item.id ? 'text-brand-600' : 'text-gray-400',
             ]"
-            >{{ item.name }}</span
           >
+            {{ item.name }}
+          </span>
           <div
             v-if="currentTab === item.id"
             class="absolute top-0 w-8 h-0.5 bg-brand-600 rounded-b-full"
@@ -583,14 +581,12 @@
       </div>
     </nav>
 
-    <!-- 弹窗：日志 -->
+    <!-- 日志弹窗 -->
     <div
       v-if="showLogModal"
-      class="fixed inset-0 z-50hips flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4"
     >
-      <div
-        class="bg-white w-full max-w-md rounded-2xl p-5 shadow-2xl animate-slide-up"
-      >
+      <div class="bg-white w-full max-w-md rounded-2xl p-5 shadow-2xl animate-slide-up">
         <div class="flex justify-between items-center mb-4">
           <h3 class="font-bold text-lg">
             {{ logForm.id ? '编辑日志' : '新日志' }}
@@ -634,7 +630,7 @@
       </div>
     </div>
 
-    <!-- 弹窗：自定义部位 -->
+    <!-- 自定义部位弹窗 -->
     <div
       v-if="showCustomPartModal"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
@@ -655,19 +651,22 @@
             添加
           </button>
         </div>
-        <div class="space-y-2">
+        <div class="space-y-2 max-h-56 overflow-y-auto">
           <div
             v-for="(p, i) in prefs.customParts"
             :key="i"
             class="flex justify-between items-center text-sm bg-gray-50 p-2 rounded"
           >
             <span>{{ p }}</span>
-            <button
-              @click="removeCustomPart(i)"
-              class="text-red-400"
-            >
+            <button @click="removeCustomPart(i)" class="text-red-400">
               <i class="ri-delete-bin-line"></i>
             </button>
+          </div>
+          <div
+            v-if="!prefs.customParts.length"
+            class="text-xs text-gray-300 text-center py-1"
+          >
+            暂无自定义部位
           </div>
         </div>
         <button
@@ -679,6 +678,7 @@
       </div>
     </div>
 
+    <!-- 隐藏文件输入：导入 JSON 备份 -->
     <input
       type="file"
       ref="fileInput"
@@ -686,6 +686,8 @@
       @change="loadJson"
       class="hidden"
     />
+
+    <!-- 提示音 -->
     <audio
       id="beepAudio"
       src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
@@ -693,7 +695,7 @@
     ></audio>
   </div>
 
-  <!-- 业务逻辑 JS -->
+  <!-- 业务逻辑 -->
   <script src="assets/app.js"></script>
 </body>
 </html>
